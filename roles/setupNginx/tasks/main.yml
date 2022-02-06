@@ -1,0 +1,36 @@
+---
+
+- name: Install nginx
+  apt:
+    name: nginx
+    state: latest
+
+- name: Ensure nginx is running and enabled
+  service:
+    name: nginx
+    state: running
+    enabled: yes
+
+- name: Create WordPress application directory
+  file:
+    path: "{{ wordpress_application_path }}"
+    state: directory
+
+- name: Create the nginx configuration file
+  template:
+    src: nginx.conf.j2 
+    dest: /etc/nginx/sites-available/wordpress.conf
+    validate: nginx -t
+
+- name: Create symbolic link to nginx configuration file for site
+  file:
+    src: /etc/nginx/sites-available/wordpress.conf
+    dest: /etc/nginx/sites-available/wordpress.conf
+    state: link
+
+- name: Reload the nginx service
+  service:
+    name: nginx
+    state: reloaded
+
+...

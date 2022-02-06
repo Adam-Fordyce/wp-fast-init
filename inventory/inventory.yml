@@ -1,0 +1,10 @@
+---
+all:
+  children:
+    controller:
+      hosts:
+        localhost:
+    webserver:
+      hosts:
+        webapp01:
+...

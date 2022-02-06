@@ -1,0 +1,66 @@
+---
+# setupMysql role
+
+- name: Install required packages for MySQL-Python (1 of 2)
+  apt:
+    name: python-dev
+    state: latest
+  
+- name: Install required packages for MySQL-Python (2 of 2)
+  apt:
+    name: libmysqlclient-dev
+    state: latest
+
+- name: Install MySQL-Python
+  pip:
+    name: MySQL-python
+
+- name: Install mariadb-server
+  apt:
+    name: mariadb-server
+    state: latest
+
+- name: Ensure mariadb is running and enabled
+  service:
+    name: mariadb
+    state: running
+    enabled: yes
+
+- name: Update mysql root password for all root accounts
+  mysql_user:
+    name: root
+    host: "{{ item }}"
+    password: "{{ mysql_root_password }}"
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    check_implicit_admin: yes
+    priv: "*.*:ALL,GRANT"
+  loop:
+    - "{{ ansible_hostname }}"
+    - 127.0.0.1
+    - ::1
+    - localhost
+
+# TODO: Add a task to write a my.cnf when logged in as the root user
+
+- name: Delete anonymous MySQL user
+  mysql_user: 
+    name: ""
+    host: "{{ item }}"
+    state: absent
+  loop:
+    - localhost
+    - "{{ ansible_nodename }}"
+
+- name: Delete Hostname based MySQL user
+  mysql_user: 
+    name: root 
+    host: "{{ ansible_nodename }}" 
+    state: absent
+
+- name: Remove MySQL test database
+  mysql_db:
+    name: test
+    state: absent
+
+...

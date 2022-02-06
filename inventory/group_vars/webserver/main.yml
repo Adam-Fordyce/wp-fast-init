@@ -1,0 +1,19 @@
+---
+
+remote_ip_address:
+ssh_user_name: root
+ssh_key_data:
+
+
+primary_domain: rashell.co.uk
+alternate_domain: www.rashell.co.uk
+
+mysql_root_password: "ASDDSASD9#£$08ASD07ASDASD*ASDFADAS(ASDasdaA@@)"
+mysql_wordpress_database: wordpress
+mysql_wordpress_username: wordpress
+mysql_wordpress_password: "PAOSDAF£SMFE_(&*JASdSAD()FASDDDO(S)SSASD+AS+_(DA"
+
+wordpress_application_path: /var/www/html/wordpress/public_html
+
+
+...

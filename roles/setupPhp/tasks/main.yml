@@ -1,0 +1,25 @@
+---
+# Install PHP
+- name: Install PHP 7.2
+  apt:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - php7.2 
+    - php7.2-cli
+    - php7.2-fpm
+    - php7.2-mysql
+    - php7.2-json
+    - php7.2-opcache
+    - php7.2-mbstring
+    - php7.2-xml
+    - php7.2-gd
+    - php7.2-curl
+
+- name: Ensure php-fpm is running and enabled
+  service:
+    name: php-fpm
+    state: running
+    enabled: yes
+
+...

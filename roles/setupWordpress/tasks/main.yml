@@ -1,0 +1,78 @@
+---
+
+- name: Get WP-CLI
+  get_url:
+    url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    dest: /usr/local/bin/wp
+    mode: "0777"
+
+- name: Get WP-CLI bash completion
+  get_url:
+    url: https://github.com/wp-cli/wp-cli/raw/master/utils/wp-completion.bash
+    dest: /opt/wp-completion/
+
+- name: Add bash completion into bash profile
+  lineinfile:
+    path: "{{ ansible_user_home }}/.bash_profile"
+    line: "/opt/wp-completion/wp-completion.bash"
+
+- name: Create wordpress database
+  mysql_db:
+    name: "{{ mysql_wordpress_database }}"
+    state: present
+
+- name: Create database user using hashed password with all database privileges
+  mysql_user:
+    name: "{{ mysql_wordpress_username }}"
+    password: "{{ mysql_wordpress_password }}"
+    encrypted: yes
+    priv: '{{ mysql_wordpress_database }}.*:ALL'
+    state: present
+
+- name: Get latest WordPress version
+  get_url:
+    url: https://wordpress.org/latest.tar.gz
+    dest: "{{ wordpress_application_path }}/"
+  register: latest_wp_var
+
+- name: Unpack the WordPress bundle
+  unarchive:
+    src: "{{ wordpress_application_path }}/latest.tar.gz"
+    dest: "{{ wordpress_application_path }}"
+    remote_src: yes
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+- name: Setup the WordPress configuration
+  copy:
+    src: "{{ wordpress_application_path }}/wp-config-sample.php"
+    dest: "{{ wordpress_application_path }}/wp-config.php"
+
+- name: Update DB_NAME in config file
+  lineinfile:
+    path: "{{ wordpress_application_path }}/wp-config.php"
+    regex: "define('DB_NAME',"
+    line: "define('DB_NAME', '{{ mysql_wordpress_database }}')"
+    owner: www-data
+    group: www-data
+
+- name: Update DB_USER in config file
+  lineinfile:
+    path: "{{ wordpress_application_path }}/wp-config.php"
+    regex: "define('DB_USER',"
+    line: "define('DB_USER', '{{ mysql_wordpress_username }}')"
+    owner: www-data
+    group: www-data
+
+- name: Update DB_PASSWORD in config file
+  lineinfile:
+    path: "{{ wordpress_application_path }}/wp-config.php"
+    regex: "define('DB_PASSWORD',"
+    line: "define('DB_PASSWORD', '{{ mysql_wordpress_password }}')"
+    owner: www-data
+    group: www-data
+
+# TODO: Get WP Salt https://api.wordpress.org/secret-key/1.1/salt/
+
+...
