@@ -18,7 +18,7 @@ Update the inventory and set the required parameters for an existing cloud serve
 ## Example
 
 ```
-ansible-playbook -i inventory plays/provision.yml
+ansible-playbook -i inventory provision.yml
 ```
 ## Author
 
