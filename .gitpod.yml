@@ -1,0 +1,25 @@
+tasks:
+  - init: |
+      sudo apt-get install -y ansible-lint
+      python -m venv venv
+      source venv/bin/activate
+      pip install --upgrade pip wheel setuptools
+      pip install -r requirements.txt
+    command: |
+      source venv/bin/activate
+
+vscode:
+  extensions:
+    - ms-python.python
+    - redhat.ansible
+    - redhat.vscode-yaml
+    - samuelcolvin.jinjahtml
+
+github:
+    prebuilds:
+        # enable for the master/default branch (defaults to true)
+        master: true
+        # enable for pull requests coming from this repo (defaults to true)
+        pullRequests: false
+        # add a "Review in Gitpod" button as a comment to pull requests (defaults to true)
+        addComment: false
