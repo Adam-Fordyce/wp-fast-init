@@ -1,4 +1,4 @@
-# setupWordpress - Role to install wordpress on a remote server
+# setup_wordpress: - Role to install wordpress on a remote server
 
 ## Introduction
 
@@ -17,7 +17,7 @@ This role will:
 ```
   - name: Install WordPress
     include_role:
-      name: setupWordpress
+      name: setup_wordpress:
 ```
 
 ## Author

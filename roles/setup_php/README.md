@@ -1,4 +1,4 @@
-# setupPhp - Role to install PHP on a remote server
+# setup_php: - Role to install PHP on a remote server
 
 ## Introduction
 
@@ -11,7 +11,7 @@ This role will:
 ```
   - name: Install PHP
     include_role:
-      name: setupPhp
+      name: setup_php:
 ```
 
 ## Author

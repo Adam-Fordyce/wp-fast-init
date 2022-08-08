@@ -17,7 +17,7 @@ server {
                          include snippets/fastcgi-php.conf;
                          fastcgi_pass unix:/run/php/php{{ 7.2 }}-fpm.sock;
             }
-            
+
             location ~ /\.ht {
                          deny all;
             }
@@ -32,7 +32,7 @@ server {
                          log_not_found off;
                          access_log off;
            }
-       
+
             location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
                          expires max;
                          log_not_found off;

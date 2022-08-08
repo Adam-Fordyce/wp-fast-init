@@ -1,4 +1,4 @@
-# setupNginx - Role to install nginx on a remote server
+# setup_nginx: - Role to install nginx on a remote server
 
 ## Introduction
 
@@ -16,7 +16,7 @@ This role will:
 ```
   - name: Install NginX
     include_role:
-      name: setupNginx
+      name: setup_nginx:
 ```
 
 ## Author
