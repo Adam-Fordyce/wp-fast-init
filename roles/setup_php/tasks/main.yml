@@ -1,11 +1,11 @@
 ---
 # Install PHP
 - name: Install PHP 7.2
-  apt:
+  ansible.builtin.apt:
     name: "{{ item }}"
     state: latest
   loop:
-    - php7.2 
+    - php7.2
     - php7.2-cli
     - php7.2-fpm
     - php7.2-mysql
@@ -17,9 +17,9 @@
     - php7.2-curl
 
 - name: Ensure php-fpm is running and enabled
-  service:
+  ansible.builtin.service:
     name: php-fpm
     state: running
-    enabled: yes
+    enabled: true
 
 ...

@@ -1,35 +1,41 @@
 ---
 
 - name: Install nginx
-  apt:
+  ansible.builting.apt:
     name: nginx
     state: latest
 
 - name: Ensure nginx is running and enabled
-  service:
+  ansible.builtin.service:
     name: nginx
     state: running
-    enabled: yes
+    enabled: true
 
 - name: Create WordPress application directory
-  file:
+  ansible.builtin.file:
     path: "{{ wordpress_application_path }}"
+    owner: "{{ ansible_user }}"
+    mode: "0644"
     state: directory
 
 - name: Create the nginx configuration file
-  template:
-    src: nginx.conf.j2 
+  ansible.builtin.template:
+    src: nginx.conf.j2
     dest: /etc/nginx/sites-available/wordpress.conf
+    owner: "{{ ansible_user }}"
+    mode: "0644"
     validate: nginx -t
 
 - name: Create symbolic link to nginx configuration file for site
-  file:
+  ansible.builtin.file:
     src: /etc/nginx/sites-available/wordpress.conf
     dest: /etc/nginx/sites-available/wordpress.conf
+    owner: "{{ ansible_user }}"
+    mode: "0644"
     state: link
 
 - name: Reload the nginx service
-  service:
+  ansible.builtin.service:
     name: nginx
     state: reloaded
 

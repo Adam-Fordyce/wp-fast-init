@@ -1,4 +1,4 @@
-# setupMysql - Role to install mysql/mariadb on a remote server
+# setup_mysql - Role to install mysql/mariadb on a remote server
 
 ## Introduction
 
@@ -14,7 +14,7 @@ This role will:
 ```
   - name: Install MySQL
     include_role:
-      name: setupMysql
+      name: setup_mysql
 ```
 
 ## Author
