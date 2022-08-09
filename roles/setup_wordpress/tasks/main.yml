@@ -1,5 +1,6 @@
 ---
 
+# TODO: Use artifacts to get a known version of this
 - name: Get WP-CLI
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
@@ -29,6 +30,7 @@
     priv: '{{ mysql_wordpress_database }}.*:ALL'
     state: present
 
+# TODO: Use artifacts to get a known version of this
 - name: Get latest WordPress version
   ansible.builtin.get_url:
     url: https://wordpress.org/latest.tar.gz
