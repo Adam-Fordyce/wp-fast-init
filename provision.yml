@@ -39,7 +39,7 @@
       include_role:
         name: "{{ item }}"
       loop:
-        - setup_mysql
+        - setup_mysql:
         - setup_php:
         - setup_nginx:
         - setup_wordpress:

@@ -1,2 +1,5 @@
 id_ed25519
+id_rsa
 passwd
+venv
+vault
