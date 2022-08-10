@@ -1,7 +1,7 @@
 ---
 
 - name: Install nginx
-  ansible.builting.apt:
+  ansible.builtin.apt:
     name: nginx
     state: latest
 

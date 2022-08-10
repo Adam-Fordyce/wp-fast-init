@@ -1,12 +1,17 @@
 ---
 # setup_mysql role
 
-- name: Install required packages for MySQL-Python (1 of 2)
+- name: Install required packages for python3-dev (1 of 3)
   ansible.builtin.apt:
-    name: python-dev
+    name: python3-dev
     state: latest
 
-- name: Install required packages for MySQL-Python (2 of 2)
+- name: Install required packages for python3-pip (2 of 3)
+  ansible.builtin.apt:
+    name: python3-pip
+    state: latest
+
+- name: Install required packages for MySQL-Python (3 of 3)
   ansible.builtin.apt:
     name: libmysqlclient-dev
     state: latest

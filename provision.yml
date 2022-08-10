@@ -1,21 +1,8 @@
 ---
 
-- hosts: localhost
-  connection: local
-  tasks:
-    - name: Write SSH key file
-      ansible.builtin.copy:
-        content: "{{ ssh_key_data }}"
-        dest: "{{ playbook_dir }}/id_ed25519"
-        mode: "0600"
-
 - hosts: webserver
   gather_facts: true
   become: true
-  vars:
-    ansible_host: "{{ remote_ip_address }}"
-    ansible_user: "{{ ssh_user_name }}"
-    ansible_ssh_private_key_file: "{{ playbook_dir }}/id_ed25519"
   pre_tasks:
     - name: Verify Ansible minimum version
       assert:
@@ -39,9 +26,9 @@
       include_role:
         name: "{{ item }}"
       loop:
-        - setup_mysql:
-        - setup_php:
-        - setup_nginx:
-        - setup_wordpress:
+        - setup_mysql
+        - setup_php
+        - setup_nginx
+        - setup_wordpress
 
 ...
