@@ -1,6 +1,4 @@
 ---
-remote_ip_address: 178.62.44.104
-ssh_user_name: root
 version: "0.0.1"
 php_version: "7.2"
 ...
