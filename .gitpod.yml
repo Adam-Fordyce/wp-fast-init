@@ -11,16 +11,14 @@ tasks:
       source /workspace/venv/bin/activate
       pip install --upgrade pip wheel setuptools
       pip install -r requirements.txt
+      pre-commit install --install-hooks
+    command: |
+      source /workspace/venv/bin/activate
+      ansible-galaxy collection install community.crypto
       ansible-galaxy collection install amazon.aws
       ansible-galaxy collection install azure.azcollection
       pip install -r ~/.ansible/collections/ansible_collections/azure/azcollection/requirements-azure.txt
       ansible-galaxy collection install google.cloud
-      ansible-galaxy collection install community.crypto
-      pre-commit install --install-hooks
-      aws ec2 import-key-pair --key-name ansible-key --public-key-material fileb://id_ed25519.pub
-
-    command: |
-      source /workspace/venv/bin/activate
 
 vscode:
   extensions:
