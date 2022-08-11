@@ -13,6 +13,15 @@
     - name: test connection to remote
       wait_for_connection:
 
+
+    - name: Enable universe repository
+      apt_repository:
+        repo: "{{ item }}"
+      loop:
+        - "deb http://archive.ubuntu.com/ubuntu/ jammy universe"
+        - "deb http://archive.ubuntu.com/ubuntu/ jammy-updates universe"
+        - "deb http://security.ubuntu.com/ubuntu/ jammy-security universe"
+
     - name: Update OS
       ansible.builtin.apt:
         name: "*"
