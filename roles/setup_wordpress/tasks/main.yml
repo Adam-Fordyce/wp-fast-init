@@ -10,12 +10,7 @@
 - name: Get WP-CLI bash completion
   ansible.builtin.get_url:
     url: https://github.com/wp-cli/wp-cli/raw/master/utils/wp-completion.bash
-    dest: /opt/wp-completion/
-
-- name: Add bash completion into bash profile
-  ansible.builtin.lineinfile:
-    path: "{{ ansible_user_home }}/.bash_profile"
-    line: "/opt/wp-completion/wp-completion.bash"
+    dest: /etc/bash_completion.d
 
 - name: Create wordpress database
   mysql_db:

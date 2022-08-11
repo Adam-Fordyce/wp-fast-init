@@ -1,15 +1,15 @@
 ---
 
+- name: Add Nginx repo
+  ansible.builtin.apt_repository:
+    repo: ppa:ondrej/nginx
+
 - name: Install nginx
   ansible.builtin.apt:
     name: nginx
-    state: latest
-
-- name: Ensure nginx is running and enabled
-  ansible.builtin.service:
-    name: nginx
-    state: running
-    enabled: true
+    state: present
+    force: true
+    update_cache: yes
 
 - name: Create WordPress application directory
   ansible.builtin.file:
@@ -29,14 +29,18 @@
 - name: Create symbolic link to nginx configuration file for site
   ansible.builtin.file:
     src: /etc/nginx/sites-available/wordpress.conf
-    dest: /etc/nginx/sites-available/wordpress.conf
+    dest: /etc/nginx/sites-enabled/wordpress.conf
     owner: "{{ ansible_user }}"
     mode: "0644"
     state: link
+  notify: reload nginx
 
-- name: Reload the nginx service
-  ansible.builtin.service:
-    name: nginx
-    state: reloaded
+- name: Set Nginx user
+  lineinfile:
+    dest: /etc/nginx/nginx.conf
+    regexp: "^user"
+    line: "user {{ username }};"
+    state: present
+  notify: restart nginx
 
 ...

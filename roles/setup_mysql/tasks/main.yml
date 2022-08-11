@@ -34,7 +34,7 @@
 - name: Update mysql root password for all root accounts
   mysql_user:
     name: root
-    host: "{{ item }}"
+    host: "{{ host }}"
     password: "{{ mysql_root_password }}"
     login_user: root
     login_password: "{{ mysql_root_password }}"
@@ -45,6 +45,9 @@
     - 127.0.0.1
     - ::1
     - localhost
+  loop_control:
+    loop_var: host
+    label: "Granting root access on {{ host }}"
 
 # TODO: Add a task to write a my.cnf when logged in as the root user
 

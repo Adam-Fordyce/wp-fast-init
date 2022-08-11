@@ -1,25 +1,78 @@
 ---
 # Install PHP
-- name: Install PHP 7.2
-  ansible.builtin.apt:
-    name: "{{ item }}"
-    state: latest
-  loop:
-    - php7.2
-    - php7.2-cli
-    - php7.2-fpm
-    - php7.2-mysql
-    - php7.2-json
-    - php7.2-opcache
-    - php7.2-mbstring
-    - php7.2-xml
-    - php7.2-gd
-    - php7.2-curl
+- name: Add PHP Repo
+  ansible.builtin.apt_repository:
+    repo: ppa:ondrej/php
 
-- name: Ensure php-fpm is running and enabled
-  ansible.builtin.service:
-    name: php-fpm
-    state: running
-    enabled: true
+- name: Install PHP 8.1
+  ansible.builtin.apt:
+    name:
+      - "php8.1-bcmath"
+      - "php8.1-cli"
+      - "php8.1-common"
+      - "php8.1-curl"
+      - "php8.1-fpm"
+      - "php8.1-gd"
+      - "php8.1-igbinary"
+      - "php8.1-imagick"
+      - "php8.1-mbstring"
+      - "php8.1-mysql"
+      - "php8.1-opcache"
+      - "php8.1-redis"
+      - "php8.1-soap"
+      - "php8.1-xml"
+      - "php8.1-xmlrpc"
+      - "php8.1-zip"
+    state: present
+    force: true
+    update_cache: true
+
+- name: Set PHP user
+  ansible.builtin.lineinfile:
+    dest: /etc/php/8.1/fpm/pool.d/www.conf
+    regexp: "^user"
+    line: "user = {{ username }}"
+    state: present
+  notify: restart php
+
+- name: Set PHP group
+  ansible.builtin.lineinfile:
+    dest: /etc/php/8.1/fpm/pool.d/www.conf
+    regexp: "^group"
+    line: "group = {{ username }}"
+    state: present
+  notify: restart php
+
+- name: Set PHP listen owner
+  ansible.builtin.lineinfile:
+    dest: /etc/php/8.1/fpm/pool.d/www.conf
+    regexp: "^listen\\.owner"
+    line: "listen.owner = {{ username }}"
+    state: present
+  notify: restart php
+
+- name: Set PHP listen group
+  ansible.builtin.lineinfile:
+    dest: /etc/php/8.1/fpm/pool.d/www.conf
+    regexp: "^listen\\.group"
+    line: "listen.group = {{ username }}"
+    state: present
+  notify: restart php
+
+- name: Set PHP upload max filesize
+  lineinfile:
+    dest: /etc/php/8.1/fpm/php.ini
+    regexp: "^upload_max_filesize"
+    line: "upload_max_filesize = 128M"
+    state: present
+  notify: reload php
+
+- name: Set PHP post max filesize
+  lineinfile:
+    dest: /etc/php/8.1/fpm/php.ini
+    regexp: "^post_max_size"
+    line: "post_max_size = 128M"
+    state: present
+  notify: reload php
 
 ...

@@ -1,8 +1,10 @@
 ---
-
+# Provision Playbook to deploy Wordpress onto a remote Ubuntu instance
 - hosts: webserver
   gather_facts: true
   become: true
+  vars:
+    username: ansible
   pre_tasks:
     - name: Verify Ansible minimum version
       assert:
@@ -10,11 +12,10 @@
         msg: >
           "You must update Ansible to at least 2.9"
   tasks:
-    - name: test connection to remote
+    - name: Test connection to remote instance
       wait_for_connection:
 
-
-    - name: Enable universe repository
+    - name: Enable the Ubuntu universe repository
       apt_repository:
         repo: "{{ item }}"
       loop:
@@ -22,12 +23,14 @@
         - "deb http://archive.ubuntu.com/ubuntu/ jammy-updates universe"
         - "deb http://security.ubuntu.com/ubuntu/ jammy-security universe"
 
-    - name: Update OS
+    - name: Update Ubuntu OS
       ansible.builtin.apt:
         name: "*"
         state: latest
+      tags:
+        - update
 
-    - name: Upgrade the OS (apt-get dist-upgrade)
+    - name: Upgrade Ubuntu OS (apt-get dist-upgrade)
       ansible.builtin.apt:
         upgrade: dist
 
@@ -35,6 +38,8 @@
       include_role:
         name: "{{ item }}"
       loop:
+#        - setup_ufw_firewall
+#        - setup_user
         - setup_mysql
         - setup_php
         - setup_nginx
