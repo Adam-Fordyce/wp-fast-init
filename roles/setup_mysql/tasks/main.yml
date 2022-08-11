@@ -32,7 +32,7 @@
     enabled: true
 
 - name: Update mysql root password for all root accounts
-  mysql_user:
+  community.mysql.mysql_user:
     name: root
     host: "{{ host }}"
     password: "{{ mysql_root_password }}"
@@ -52,7 +52,7 @@
 # TODO: Add a task to write a my.cnf when logged in as the root user
 
 - name: Delete anonymous MySQL user
-  mysql_user:
+  community.mysql.mysql_user:
     name: ""
     host: "{{ item }}"
     login_user: root
@@ -61,9 +61,13 @@
   loop:
     - localhost
     - "{{ ansible_nodename }}"
+  loop_control:
+    loop_var: dbuser
+    label: "Removing DB user {{ dbuser }}"
+
 
 - name: Delete Hostname based MySQL user
-  mysql_user:
+  community.mysql.mysql_user:
     name: root
     host: "{{ ansible_nodename }}"
     login_user: root
@@ -71,7 +75,7 @@
     state: absent
 
 - name: Remove MySQL test database
-  mysql_db:
+  community.mysql.mysql_db:
     name: test
     login_user: root
     login_password: "{{ mysql_root_password }}"

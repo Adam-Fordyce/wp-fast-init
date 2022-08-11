@@ -13,19 +13,24 @@
     dest: /etc/bash_completion.d
 
 - name: Create wordpress database
-  mysql_db:
+  community.mysql.mysql_db:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
     name: "{{ mysql_wordpress_database }}"
     state: present
 
 - name: Create database user using hashed password with all database privileges
-  mysql_user:
+  community.mysql.mysql_user:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
     name: "{{ mysql_wordpress_username }}"
     password: "{{ mysql_wordpress_password }}"
-    encrypted: true
+    encrypted: false
     priv: '{{ mysql_wordpress_database }}.*:ALL'
     state: present
 
 # TODO: Use artifacts to get a known version of this
+# TODO: Use a tempdir for dest
 - name: Get latest WordPress version
   ansible.builtin.get_url:
     url: https://wordpress.org/latest.tar.gz
@@ -34,7 +39,7 @@
 
 - name: Unpack the WordPress bundle
   ansible.builtin.unarchive:
-    src: "{{ wordpress_application_path }}/latest.tar.gz"
+    src: "{{ latest_wp_var.dest }}"
     dest: "{{ wordpress_application_path }}"
     remote_src: true
     owner: www-data
@@ -43,15 +48,15 @@
 
 - name: Setup the WordPress configuration
   ansible.builtin.copy:
-    src: "{{ wordpress_application_path }}/wp-config-sample.php"
-    dest: "{{ wordpress_application_path }}/wp-config.php"
+    src: "{{ wordpress_application_path }}/wordpress/wp-config-sample.php"
+    dest: "{{ wordpress_application_path }}/wordpress/wp-config.php"
     owner: www-data
     group: www-data
     mode: "0644"
 
 - name: Update DB_NAME in config file
   ansible.builtin.lineinfile:
-    path: "{{ wordpress_application_path }}/wp-config.php"
+    path: "{{ wordpress_application_path }}/wordpress/wp-config.php"
     regex: "define('DB_NAME',"
     line: "define('DB_NAME', '{{ mysql_wordpress_database }}')"
     owner: www-data
@@ -59,7 +64,7 @@
 
 - name: Update DB_USER in config file
   ansible.builtin.lineinfile:
-    path: "{{ wordpress_application_path }}/wp-config.php"
+    path: "{{ wordpress_application_path }}/wordpress/wp-config.php"
     regex: "define('DB_USER',"
     line: "define('DB_USER', '{{ mysql_wordpress_username }}')"
     owner: www-data
@@ -67,7 +72,7 @@
 
 - name: Update DB_PASSWORD in config file
   ansible.builtin.lineinfile:
-    path: "{{ wordpress_application_path }}/wp-config.php"
+    path: "{{ wordpress_application_path }}/wordpress/wp-config.php"
     regex: "define('DB_PASSWORD',"
     line: "define('DB_PASSWORD', '{{ mysql_wordpress_password }}')"
     owner: www-data
