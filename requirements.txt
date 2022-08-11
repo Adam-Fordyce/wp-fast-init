@@ -1,6 +1,4 @@
 awscli==1.25.46
-boto3==1.24.49
-botocore==1.27.49
 gcloud==0.18.3
 Jinja2==3.0.3
 jmespath==1.0.1
