@@ -24,10 +24,10 @@ chmod 700 /usr/local/bin/duck.sh
 
 cat <<EOF > /usr/local/bin/duck_daemon.sh
 #!/usr/bin/env bash
-su - ubuntu -c "nohup /usr/local/bin/duck.sh > /var/log/duck.log 2>&1&"
+sudo su - root -c "nohup /usr/local/bin/duck.sh > /var/log/duck.log 2>&1&"
 EOF
-chmod +x /usr/local/bin/duck_daemon.sh
-chown root /usr/local/bin/duck_daemon.sh
-chmod 744 /usr/local/bin/duck_daemon.sh
-ln -s /usr/local/bin/duck_daemon.sh /etc/rc2.d/S10duckdns
-/usr/local/bin/duck_daemon.sh
+sudo chmod +x /usr/local/bin/duck_daemon.sh
+sudo chown root /usr/local/bin/duck_daemon.sh
+sudo chmod 744 /usr/local/bin/duck_daemon.sh
+sudo ln -s /usr/local/bin/duck_daemon.sh /etc/rc2.d/S10duckdns
+sudo /usr/local/bin/duck_daemon.sh
