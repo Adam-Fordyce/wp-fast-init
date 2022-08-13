@@ -1,11 +1,16 @@
 ---
+# Simple playbook to launch EC2 instance in existing AWS estate.
+# Not intended to manage VPCs, NAT Gateways, Subnets etc
+
 - name: Create Ec2 instances
   hosts: localhost
   gather_facts: false
   vars:
     aws_ssh_key_name: ansible-key
     ssh_key_filename: id_ed25519
-    aws_default_az: us-east-1a
+    user_data: "{{ lookup('file', 'userdata.txt') }}"
+  vars_files:
+    - vars.yml
   tasks:
 
     # Block is a Group of Tasks combined together
@@ -18,39 +23,7 @@
               instance-state-name: ["running"]
           register: ec2info
 
-      # By specifying always on the tag,
-      # I let this block to run all the time by module_default
-      # this is for security to net create ec2 instances accidentally
-      tags: ['always', 'getinfoonly']
-
-    - name: Create EC2 Block
-      block:
-
-        - name: generate SSH key "id_ed25519"
-          openssh_keypair:
-            path: "{{ ssh_key_filename }}"
-            type: ed25519
-            size: 512
-            state: present
-            force: false
-            mode: "0600"
-          register: ssh_key_details
-
-        - name: try creating a key pair with name of an already existing keypair
-          amazon.aws.ec2_key:
-            name: "{{ aws_ssh_key_name }}"
-            key_material: "{{ ssh_key_details.public_key }}"
-            force: true
-          when: ssh_key_details.changed == true
-
-        - name: get default subnet in the aws region
-          amazon.aws.ec2_vpc_subnet_info:
-            filters:
-              availability-zone: "{{ aws_default_az }}"
-              default-for-az: true
-          register: subnets
-
-        - name: get ec2 instance details
+        - name: Get existing ec2 instance details
           amazon.aws.ec2_instance_info:
             filters:
               instance-state-name: ["running"]
@@ -68,6 +41,38 @@
                 first | default()
               }}
 
+        - name: Get default subnet in the aws region
+          amazon.aws.ec2_vpc_subnet_info:
+            filters:
+              availability-zone: "{{ aws_default_az }}"
+              default-for-az: true
+          register: subnets
+
+      # By specifying always on the tag,
+      # I let this block to run all the time by module_default
+      # this is for security to net create ec2 instances accidentally
+      tags: ['always', 'getinfoonly']
+
+    - name: Create EC2 Block
+      block:
+
+        - name: generate SSH key "id_ed25519"
+          openssh_keypair:
+            path: "{{ playbook_dir }}/../{{ ssh_key_filename }}"
+            type: ed25519
+            size: 512
+            state: present
+            force: false
+            mode: "0600"
+          register: ssh_key_details
+
+        - name: try creating a key pair with name of an already existing keypair
+          amazon.aws.ec2_key:
+            name: "{{ aws_ssh_key_name }}"
+            key_material: "{{ ssh_key_details.public_key }}"
+            force: true
+          when: ssh_key_details.changed == true
+
         - name: start an instance with a public IP address
           tags: create_ec2
           amazon.aws.ec2_instance:
@@ -82,7 +87,8 @@
                 list |
                 first
               }}
-            instance_type: t3.medium
+            instance_type: "{{ instance_type }}"
+            user_data: "{{ user_data }}"
             state: running
             security_group: default
             network:
@@ -133,7 +139,7 @@
                 cidr_ip: 0.0.0.0/0
 
         - name: Add instance to host group
-          add_host:
+          ansible.builtin.add_host:
             hostname: "{{ item.public_ip_address }}"
             groupname: launched
           loop: "{{ ec2_info_post.instances }}"
@@ -171,7 +177,7 @@
                         ansible_ssh_private_key_file: {{ ssh_key_filename }}
               {% endfor %}
               ...
-            dest: inventory/hosts.yaml
+            dest: "{{ playbook_dir}}/../inventory/hosts.yaml"
       # By specifying never on the tag of this block,
       # I let this block to run only when explicitely being called
       tags: ['never', 'ec2-create']

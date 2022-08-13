@@ -4,7 +4,7 @@
   ansible.builtin.apt_repository:
     repo: ppa:ondrej/nginx
 
-- name: Install nginx
+- name: Install Nginx
   ansible.builtin.apt:
     name: nginx
     state: present
@@ -24,7 +24,7 @@
     dest: /etc/nginx/sites-available/wordpress.conf
     owner: "{{ ansible_user }}"
     mode: "0644"
-    validate: nginx -t
+    #validate: nginx -t
 
 - name: Create symbolic link to nginx configuration file for site
   ansible.builtin.file:
