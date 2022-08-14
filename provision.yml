@@ -4,7 +4,7 @@
   gather_facts: true
   become: true
   vars:
-    username: ansible
+    mysql_database_host: localhost
   pre_tasks:
     - name: Verify Ansible minimum version
       assert:
@@ -15,31 +15,12 @@
     - name: Test connection to remote instance
       wait_for_connection:
 
-    - name: Enable the Ubuntu universe repository
-      apt_repository:
-        repo: "{{ item }}"
-      loop:
-        - "deb http://archive.ubuntu.com/ubuntu/ jammy universe"
-        - "deb http://archive.ubuntu.com/ubuntu/ jammy-updates universe"
-        - "deb http://security.ubuntu.com/ubuntu/ jammy-security universe"
-
-    - name: Update Ubuntu OS
-      ansible.builtin.apt:
-        name: "*"
-        state: latest
-      tags:
-        - update
-
-    - name: Upgrade Ubuntu OS (apt-get dist-upgrade)
-      ansible.builtin.apt:
-        upgrade: dist
-
     - name: Configure Applications
       include_role:
         name: "{{ item }}"
       loop:
+        - setup_server
 #        - setup_ufw_firewall
-#        - setup_user
         - setup_mysql
         - setup_php
         - setup_nginx

@@ -4,10 +4,10 @@ server {
             listen 80;
             root /var/www/html/wordpress/public_html;
             index index.php index.html;
-            server_name SUBDOMAIN.DOMAIN.TLD;
+            server_name {{ site_domain_prefix }}.{{ site_domain_suffix }};
 
-	    access_log /var/log/nginx/SUBDOMAIN.access.log;
-    	    error_log /var/log/nginx/SUBDOMAIN.error.log;
+	    access_log /var/log/nginx/{{ site_domain_prefix }}.access.log;
+    	    error_log /var/log/nginx/{{ site_domain_prefix }}.error.log;
 
             location / {
                          try_files $uri $uri/ =404;
@@ -15,7 +15,7 @@ server {
 
             location ~ \.php$ {
                          include snippets/fastcgi-php.conf;
-                         fastcgi_pass unix:/run/php/php{{ 7.2 }}-fpm.sock;
+                         fastcgi_pass unix:/run/php/php-fpm.sock;
             }
 
             location ~ /\.ht {

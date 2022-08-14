@@ -1,25 +1,26 @@
 ---
 
 # TODO: Use artifacts to get a known version of this
-- name: Get WP-CLI
+
+- name: CLI - Get WP-CLI
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
     dest: /usr/local/bin/wp
     mode: "0777"
 
-- name: Get WP-CLI bash completion
+- name: CLI - Get WP-CLI bash completion
   ansible.builtin.get_url:
     url: https://github.com/wp-cli/wp-cli/raw/master/utils/wp-completion.bash
     dest: /etc/bash_completion.d
 
-- name: Create wordpress database
+- name: DB - Create Wordpress database
   community.mysql.mysql_db:
     login_user: root
     login_password: "{{ mysql_root_password }}"
     name: "{{ mysql_wordpress_database }}"
     state: present
 
-- name: Create database user using hashed password with all database privileges
+- name: DB - Create user with all applicataion database privileges
   community.mysql.mysql_user:
     login_user: root
     login_password: "{{ mysql_root_password }}"
@@ -29,55 +30,57 @@
     priv: '{{ mysql_wordpress_database }}.*:ALL'
     state: present
 
-# TODO: Use artifacts to get a known version of this
-# TODO: Use a tempdir for dest
-- name: Get latest WordPress version
+- name: APP - Create temporary build directory
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: build
+  register: setup_wordpress_tempdir
+
+- name: APP - Get latest Wordpress version
   ansible.builtin.get_url:
     url: https://wordpress.org/latest.tar.gz
-    dest: "{{ wordpress_application_path }}/"
-  register: latest_wp_var
+    dest: "{{ setup_wordpress_tempdir.path }}/"
+    owner: "{{ site_application_username }}"
+    group: "{{ site_application_groupname }}"
+  register: setup_wordpress_package
 
 - name: Unpack the WordPress bundle
   ansible.builtin.unarchive:
-    src: "{{ latest_wp_var.dest }}"
-    dest: "{{ wordpress_application_path }}"
+    src: "{{ setup_wordpress_package.dest }}"
+    dest: "{{ setup_wordpress_tempdir.path }}"
     remote_src: true
-    owner: www-data
-    group: www-data
+    owner: "{{ site_application_username }}"
+    group: "{{ site_application_groupname }}"
     mode: "0755"
 
-- name: Setup the WordPress configuration
+- name: APP - Copy the wordpress application to the public_html folder
   ansible.builtin.copy:
-    src: "{{ wordpress_application_path }}/wordpress/wp-config-sample.php"
-    dest: "{{ wordpress_application_path }}/wordpress/wp-config.php"
-    owner: www-data
-    group: www-data
-    mode: "0644"
+    src: "{{ setup_wordpress_tempdir.path }}/wordpress/"
+    dest: "{{ wordpress_application_path }}/"
+    remote_src: true
+    directory_mode: true
+    owner: "{{ site_application_username }}"
+    group: "{{ site_application_groupname }}"
+    mode: "0755"
 
-- name: Update DB_NAME in config file
-  ansible.builtin.lineinfile:
-    path: "{{ wordpress_application_path }}/wordpress/wp-config.php"
-    regex: "define('DB_NAME',"
-    line: "define('DB_NAME', '{{ mysql_wordpress_database }}')"
-    owner: www-data
-    group: www-data
+- name: APP - Configure wp-config.php
+  ansible.builtin.template:
+    src: templates/wp-config.php.j2
+    dest: "{{ wordpress_application_path }}/wp-config.php"
+    owner: "{{ site_application_username }}"
+    group: "{{ site_application_groupname }}"
+    mode: "0640"
+  vars:
+    mysql_db: "{{ mysql_wordpress_database }}"
+    mysql_user: "{{ mysql_wordpress_username }}"
+    mysql_password: "{{ mysql_wordpress_password }}"
+    mysql_host: "{{ mysql_database_host }}"
+  notify: reload php
 
-- name: Update DB_USER in config file
-  ansible.builtin.lineinfile:
-    path: "{{ wordpress_application_path }}/wordpress/wp-config.php"
-    regex: "define('DB_USER',"
-    line: "define('DB_USER', '{{ mysql_wordpress_username }}')"
-    owner: www-data
-    group: www-data
-
-- name: Update DB_PASSWORD in config file
-  ansible.builtin.lineinfile:
-    path: "{{ wordpress_application_path }}/wordpress/wp-config.php"
-    regex: "define('DB_PASSWORD',"
-    line: "define('DB_PASSWORD', '{{ mysql_wordpress_password }}')"
-    owner: www-data
-    group: www-data
-
-# TODO: Get WP Salt https://api.wordpress.org/secret-key/1.1/salt/
+- name: APP - Remove tempdir
+  ansible.builtin.file:
+    path: "{{ setup_wordpress_tempdir.path }}"
+    state: absent
+  when: setup_wordpress_tempdir.path is defined
 
 ...

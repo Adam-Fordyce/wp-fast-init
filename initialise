@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-export AWS_ACCESS_KEY_ID=AKIAYIH3OD5Z3V7MGL7J
-export AWS_SECRET_ACCESS_KEY=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
+export AWS_ACCESS_KEY_ID=AKIA4IQOAUCDEZKRMWHX
+export AWS_SECRET_ACCESS_KEY=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
 export AWS_DEFAULT_REGION=us-east-1
 
 ansible-playbook                                                              \
     --connection=local                                                        \
     -e ansible_python_interpreter=`which python3`                             \
     --tags ec2-create                                                         \
-    deploy.yml
+    aws/deploy.yml
