@@ -1,79 +1,14 @@
 ---
 # Main task file for the role setup_php
-
-- name: Add PHP Repo
-  ansible.builtin.apt_repository:
-    repo: ppa:ondrej/php
-
-- name: "Install PHP {{ site_php_version }}"
-  ansible.builtin.apt:
-    name:
-      - "php{{ site_php_version }}-bcmath"
-      - "php{{ site_php_version }}-cli"
-      - "php{{ site_php_version }}-common"
-      - "php{{ site_php_version }}-curl"
-      - "php{{ site_php_version }}-fpm"
-      - "php{{ site_php_version }}-gd"
-      - "php{{ site_php_version }}-igbinary"
-      - "php{{ site_php_version }}-imagick"
-      - "php{{ site_php_version }}-mbstring"
-      - "php{{ site_php_version }}-mysql"
-      - "php{{ site_php_version }}-opcache"
-      - "php{{ site_php_version }}-redis"
-      - "php{{ site_php_version }}-soap"
-      - "php{{ site_php_version }}-xml"
-      - "php{{ site_php_version }}-xmlrpc"
-      - "php{{ site_php_version }}-zip"
-    state: present
-    force: true
-    update_cache: true
-
-- name: Set PHP user
-  ansible.builtin.lineinfile:
-    dest: "/etc/php/{{ site_php_version }}/fpm/pool.d/www.conf"
-    regexp: "^user"
-    line: "user = {{ site_application_username }}"
-    state: present
-  notify: restart php
-
-- name: Set PHP group
-  ansible.builtin.lineinfile:
-    dest: /etc/php/{{ site_php_version }}/fpm/pool.d/www.conf
-    regexp: "^group"
-    line: "group = {{ site_application_username }}"
-    state: present
-  notify: restart php
-
-- name: Set PHP listen owner
-  ansible.builtin.lineinfile:
-    dest: /etc/php/{{ site_php_version }}/fpm/pool.d/www.conf
-    regexp: "^listen\\.owner"
-    line: "listen.owner = {{ site_application_username }}"
-    state: present
-  notify: restart php
-
-- name: Set PHP listen group
-  ansible.builtin.lineinfile:
-    dest: /etc/php/{{ site_php_version }}/fpm/pool.d/www.conf
-    regexp: "^listen\\.group"
-    line: "listen.group = {{ site_application_username }}"
-    state: present
-  notify: restart php
-
-- name: Set PHP upload max filesize
-  ansible.builtin.lineinfile:
-    dest: /etc/php/{{ site_php_version }}/fpm/php.ini
-    regexp: "^upload_max_filesize"
-    line: "upload_max_filesize = 128M"
-    state: present
-  notify: reload php
-
-- name: Set PHP post max filesize
-  ansible.builtin.lineinfile:
-    dest: /etc/php/{{ site_php_version }}/fpm/php.ini
-    regexp: "^post_max_size"
-    line: "post_max_size = 128M"
-    state: present
-  notify: reload php
-
+# TODO:
+# Add PHP Repo from ondrej/php
+# Install required PHP packages from apt for PHP version in use
+# PHP-FPM configuration:
+#   Set PHP user
+#   Set PHP group
+#   Set PHP listen owner
+#   Set PHP listen group
+#   Set PHP upload max filesize
+#   Set PHP post max filesize
+# Restart PHP-FPM service if required
 ...

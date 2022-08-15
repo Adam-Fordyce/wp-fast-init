@@ -25,6 +25,7 @@
         - setup_server
 #        - setup_ufw_firewall
         - setup_mysql
+#        - Configure backup plan
 
 - hosts: webserver
   gather_facts: true
@@ -42,5 +43,7 @@
         - setup_php
         - setup_nginx
         - setup_wordpress
+#        - protect with SSL
+#        - implement a backup plan
 
 ...

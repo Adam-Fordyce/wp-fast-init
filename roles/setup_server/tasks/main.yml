@@ -4,44 +4,4 @@
 # Enable the Ubuntu univers repository for "Ubuntu jammy"
 # Optionally allow for updating and upgrading the operating system
 
-- name: Create application users group
-  ansible.builtin.group:
-    name: "{{ site_application_username }}"
-    state: present
-
-- name: Create application user
-  ansible.builtin.user:
-    name: "{{ site_application_username }}"
-    groups: "{{ site_application_groupname }}"
-    shell: /usr/bin/bash
-    generate_ssh_key: true
-    state: present
-
-- name: Enable the Ubuntu universe repository
-  ansible.builtin.apt_repository:
-    repo: "{{ repo }}"
-  loop:
-    - "deb http://archive.ubuntu.com/ubuntu/ jammy universe"
-    - "deb http://archive.ubuntu.com/ubuntu/ jammy-updates universe"
-    - "deb http://security.ubuntu.com/ubuntu/ jammy-security universe"
-  loop_control:
-    loop_var: repo
-    label: "Enable: {{ repo }}"
-
-- name: Update the Ubuntu Operating System
-  block:
-    - name: Update Ubuntu (apt-get update)
-      ansible.builtin.apt:
-        name: "*"
-        state: latest
-
-    - name: Upgrade Ubuntu OS (apt-get dist-upgrade)
-      ansible.builtin.apt:
-        upgrade: dist
-  tags:
-    - never
-    - update
-  # By specifying the tag never this block will only be
-  # called when explicitly requested
-
 ...

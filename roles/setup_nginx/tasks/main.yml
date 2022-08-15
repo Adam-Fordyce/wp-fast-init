@@ -7,47 +7,4 @@
 # Activeate the Wordpress configuration in nginx
 # Set the nginx application user
 
-- name: Add nginx repo
-  ansible.builtin.apt_repository:
-    repo: ppa:ondrej/nginx
-
-- name: Install nginx
-  ansible.builtin.apt:
-    name: nginx
-    state: present
-    force: true
-    update_cache: true
-
-- name: Create Wordpress application directory
-  ansible.builtin.file:
-    path: "{{ wordpress_application_path }}"
-    owner: "{{ ansible_user }}"
-    mode: "0644"
-    state: directory
-
-- name: Create the nginx configuration file
-  ansible.builtin.template:
-    src: nginx.conf.j2
-    dest: /etc/nginx/sites-available/wordpress.conf
-    owner: "{{ ansible_user }}"
-    mode: "0644"
-  notify: reload nginx
-
-- name: Create symbolic link to nginx configuration file for site
-  ansible.builtin.file:
-    src: /etc/nginx/sites-available/wordpress.conf
-    dest: /etc/nginx/sites-enabled/wordpress.conf
-    owner: "{{ ansible_user }}"
-    mode: "0644"
-    state: link
-  notify: reload nginx
-
-- name: Set nginx user
-  ansible.builtin.lineinfile:
-    dest: /etc/nginx/nginx.conf
-    regexp: "^user"
-    line: "user {{ site_application_username }};"
-    state: present
-  notify: restart nginx
-
 ...
