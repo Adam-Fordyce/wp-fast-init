@@ -3,13 +3,14 @@
 ## Introduction
 
 This role will:
- - Install the NginX package
+ - Add the apt repository for nginx
+ - Install the nginx package
  - Enable the nginx service on startup
  - Configure the nginx service to start
  - Create the application path that is to be served
- - Create the WordPress specific nginx configuration file
+ - Create the Wordpress specific nginx configuration file from template
  - Create a symbolic link to the configuration to enable the site
- - Reload the service
+ - Reload/Restart the service if required
 
 ## Example
 
@@ -18,7 +19,3 @@ This role will:
     include_role:
       name: setup_nginx:
 ```
-
-## Author
-
-Adam Fordyce

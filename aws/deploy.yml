@@ -1,183 +1,234 @@
 ---
-# Simple playbook to launch EC2 instance in existing AWS estate.
-# Not intended to manage VPCs, NAT Gateways, Subnets etc
-
-- name: Create Ec2 instances
+# AWS Deploy Instance Playbook
+- name: AWS Deploy Instance Playbook
   hosts: localhost
+  connection: local
   gather_facts: false
-  vars:
-    aws_ssh_key_name: ansible-key
-    ssh_key_filename: id_ed25519
-    user_data: "{{ lookup('file', 'userdata.txt') }}"
   vars_files:
     - vars.yml
   tasks:
+    - name: "Get default subnet for the AWS region and az: {{ site_aws_default_az }}"
+      amazon.aws.ec2_vpc_subnet_info:
+        filters:
+          availability-zone: "{{ site_aws_default_az }}"
+          default-for-az: true
+      register: deploy_vpc_subnets
 
-    # Block is a Group of Tasks combined together
-    - name: Get Info Block
-      block:
-        - name: Get Running instance Info
+    - name: Check for existing SSH keys
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../{{ site_ssh_key_filename }}"
+      register: deploy_stat_ssh_keys
 
-          ec2_instance_info:
-            filters:
-              instance-state-name: ["running"]
-          register: ec2info
+    - name: Generate an ED25519 SSH key
+      openssh_keypair:
+        path: "{{ playbook_dir }}/../{{ site_ssh_key_filename }}"
+        type: ed25519
+        size: 512
+        state: present
+        force: false
+        mode: "0600"
+      register: deploy_ssh_key_details
 
-        - name: Get existing ec2 instance details
-          amazon.aws.ec2_instance_info:
-            filters:
-              instance-state-name: ["running"]
-          register: ec2_info
+    - name: Add local keypair to AWS EC2
+      amazon.aws.ec2_key:
+        name: "{{ site_ssh_keyname }}"
+        key_material: "{{ deploy_ssh_key_details.public_key }}"
 
-        - name: Store the ec2_info in facts
-          set_fact:
-            instance_id: |-
-              {{
-                ec2info.instances |
-                selectattr('tags.Name', 'defined') |
-                selectattr('tags.Name', 'equalto', 'appserver') |
-                map(attribute='instance_id') |
-                list |
-                first | default()
-              }}
+    - name: Enable protocols SSH, HTTP, and HTTPS on the instance security group
+      amazon.aws.ec2_group:
+        name: Webserver
+        description: Webserver Security Group
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 443
+            to_port: 443
+            cidr_ip: 0.0.0.0/0
+      register: deploy_webserver_sg
 
-        - name: Get default subnet in the aws region
-          amazon.aws.ec2_vpc_subnet_info:
-            filters:
-              availability-zone: "{{ aws_default_az }}"
-              default-for-az: true
-          register: subnets
+    - name: Enable MySQL access to the instances in the webserver security group
+      amazon.aws.ec2_group:
+        name: MySQL Server
+        description: MySQL Server Security Group
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 3306
+            to_port: 3306
+            group_id: "{{ deploy_webserver_sg.group_id }}"
+      register: deploy_dbserver_sg
 
-      # By specifying always on the tag,
-      # I let this block to run all the time by module_default
-      # this is for security to net create ec2 instances accidentally
-      tags: ['always', 'getinfoonly']
+    - name: Launch AWS EC2 VM(s)
+      amazon.aws.ec2_instance:
+        name: "{{ vm.name }}"
+        key_name: "{{ site_ssh_keyname }}"
+        detailed_monitoring: true
+        vpc_subnet_id: |-
+          {{
+            deploy_vpc_subnets.subnets |
+            selectattr('subnet_id', 'defined') |
+            map(attribute='subnet_id') |
+            list |
+            first
+          }}
+        instance_type: "{{ vm.instance_type }}"
+        user_data: "{{ vm.user_data }}"
+        state: running
+        security_group: "{{ vm.sg }}"
+        network:
+          assign_public_ip: true
+        image_id: "{{ vm.ami }}"
+        wait: true
+        wait_timeout: 500
+        metadata_options:
+          http_endpoint: enabled
+          http_tokens: optional
+        tags:
+          Name: "{{ vm.name }}"
+          Deployment: GitPod
+          Environment: Testing
+          os: Ubuntu
+      loop:
+        - name: "{{ site_webserver_name }}"
+          sg: "{{ deploy_webserver_sg.group_id }}"
+          ami: "{{ site_ami_id }}"
+          instance_type: "{{ site_instance_type }}"
+          user_data: "{{ site_webserver_user_data }}"
+        - name: "{{ site_dbserver_name }}"
+          sg: "{{ deploy_dbserver_sg.group_id }}"
+          ami: "{{ site_ami_id }}"
+          instance_type: "{{ site_instance_type }}"
+          user_data: "{{ site_dbserver_user_data }}"
+      loop_control:
+        loop_var: vm
+        label: "Creating {{ vm.name }}"
+      register: deploy_ec2_instance
 
-    - name: Create EC2 Block
-      block:
+    - name: Wait for SSH access to VM(s)
+      ansible.builtin.wait_for:
+        host: "{{ instance.public_ip_address }}"
+        port: 22
+        delay: 10
+        timeout: 120
+      loop: |-
+        {{
+          deploy_ec2_instance.results |
+          selectattr('instances', 'defined') |
+          map(attribute='instances') |
+          flatten |
+          list
+        }}
+      loop_control:
+        loop_var: instance
+        label: "{{ instance.instance_id }} - {{ instance.public_ip_address }}"
 
-        - name: generate SSH key "id_ed25519"
-          openssh_keypair:
-            path: "{{ playbook_dir }}/../{{ ssh_key_filename }}"
-            type: ed25519
-            size: 512
-            state: present
-            force: false
-            mode: "0600"
-          register: ssh_key_details
+    - name: Create Ansible Inventory
+      copy:
+        content: |
+          ---
+          all:
+            children:
+              controller:
+                hosts:
+                  localhost:
+          {%- for instance in
+            deploy_ec2_instance.results |
+            selectattr('instances', 'defined') |
+            map(attribute='instances') |
+            flatten |
+            list
+          -%}
+            {% if instance.tags.Name == site_webserver_name %}
 
-        - name: try creating a key pair with name of an already existing keypair
-          amazon.aws.ec2_key:
-            name: "{{ aws_ssh_key_name }}"
-            key_material: "{{ ssh_key_details.public_key }}"
-            force: true
-          when: ssh_key_details.changed == true
+              webserver:
+                hosts:
+                  {{ instance.tags.Name }}:
+                    ansible_host: {{ instance.public_ip_address }}
+                    private_ip: {{ instance.private_ip_address }}
+                    private_dns_name: {{ instance.private_dns_name }}
+                    public_dns_name: {{ instance.public_dns_name }}
+                    ansible_user: ubuntu
+                    ansible_ssh_private_key_file: {{ site_ssh_key_filename }}
+            {%- endif -%}
+            {% if instance.tags.Name == site_dbserver_name %}
 
-        - name: start an instance with a public IP address
-          tags: create_ec2
-          amazon.aws.ec2_instance:
-            name: appserver
-            key_name: "{{ aws_ssh_key_name }}"
-            detailed_monitoring: true
-            vpc_subnet_id: |-
-              {{
-                subnets.subnets |
-                selectattr('subnet_id', 'defined') |
-                map(attribute='subnet_id') |
-                list |
-                first
-              }}
-            instance_type: "{{ instance_type }}"
-            user_data: "{{ user_data }}"
-            state: running
-            security_group: default
-            network:
-              assign_public_ip: true
-            image_id: "ami-09d56f8956ab235b3"
-            wait: true
-            wait_timeout: 500
-            count: 1
-            metadata_options:
-              http_endpoint: enabled
-              http_tokens: optional
-            tags:
-              Name: AppServer
-              Deployment: GitPod
-              Environment: Testing
-              os: Ubuntu
-          register: ec2
-          delegate_to: localhost
-          when: instance_id | length <= 0
+              dbserver:
+                hosts:
+                  {{ instance.tags.Name }}:
+                    ansible_host: {{ instance.public_ip_address }}
+                    private_ip: {{ instance.private_ip_address }}
+                    private_dns_name: {{ instance.private_dns_name }}
+                    public_dns_name: {{ instance.public_dns_name }}
+                    ansible_user: ubuntu
+                    ansible_ssh_private_key_file: {{ site_ssh_key_filename }}
 
-        - name: get ec2 instance details
-          amazon.aws.ec2_instance_info:
-            filters:
-              instance-state-name: ["running"]
-          register: ec2_info_post
-          delegate_to: localhost
+            {%- endif -%}
+          {% endfor %}
 
-        - name: Allow SSH, HTTP, and HTTPS through the default security group
-          amazon.aws.ec2_group:
-            name: default
-            description: Default Security Group
-            rules:
-              - proto: tcp
-                from_port: 80
-                to_port: 80
-                cidr_ip: 0.0.0.0/0
-              - proto: tcp
-                from_port: 22
-                to_port: 22
-                cidr_ip: 0.0.0.0/0
-              - proto: tcp
-                from_port: 443
-                to_port: 443
-                cidr_ip: 0.0.0.0/0
-              - proto: icmp
-                from_port: 8 # icmp type, -1 = any type
-                to_port: -1 # icmp subtype, -1 = any subtype
-                cidr_ip: 0.0.0.0/0
+          ...
+        dest: "{{ playbook_dir}}/../inventory/hosts.yaml"
 
-        - name: Add instance to host group
-          ansible.builtin.add_host:
-            hostname: "{{ item.public_ip_address }}"
-            groupname: launched
-          loop: "{{ ec2_info_post.instances }}"
-          loop_control:
-            loop_var: item
-            label: "{{ item.instance_id }} - {{ item.public_ip_address }}"
+    - name: Check for existing ansible vault file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../inventory/group_vars/all/vault"
+      register: deploy_vault
 
-        - name: Wait for SSH to come up
-          ansible.builtin.wait_for:
-            host: "{{ item.public_ip_address }}"
-            port: 22
-            delay: 10
-            timeout: 120
-          delegate_to: localhost
-          loop: "{{ ec2_info_post.instances }}"
-          loop_control:
-            loop_var: item
-            label: "{{ item.instance_id }} - {{ item.public_ip_address }}"
+    - name: Check for existing ansible vault-id file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../passwd"
+      register: deploy_passwd
 
-        - name: Create Inventory
-          copy:
-            content: |-
-              ---
-              {% for instance in ec2_info_post.instances %}
-              all:
-                children:
-                  controller:
-                    hosts:
-                      localhost:
-                  webserver:
-                    hosts:
-                      {{ instance.tags.Name }}:
-                        ansible_host: {{ instance.public_ip_address }}
-                        ansible_user: ubuntu
-                        ansible_ssh_private_key_file: {{ ssh_key_filename }}
-              {% endfor %}
-              ...
-            dest: "{{ playbook_dir}}/../inventory/hosts.yaml"
-      # By specifying never on the tag of this block,
-      # I let this block to run only when explicitely being called
-      tags: ['never', 'ec2-create']
+    - name: Create initial passwords
+      ansible.builtin.set_fact:
+        mysql_root_password: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname ~ 'superuser') }}"
+        mysql_app_password: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname ~ 'application') }}"
+        mysql_app_db_name: "{{ lookup('ansible.builtin.password', '/dev/null', chars='a-z', seed=inventory_hostname ~ 'dbname') }}"
+        mysql_app_db_user: "{{ lookup('ansible.builtin.password', '/dev/null', chars='a-z', seed=inventory_hostname ~ 'dbuser') }}"
+      when: not deploy_vault.stat.exists
+
+    - name: Create initial vault-id password
+      ansible.builtin.set_fact:
+        vault_id_password: "{{ lookup('ansible.builtin.password', '/dev/null', seed=inventory_hostname) }}"
+      when: not deploy_passwd.stat.exists
+
+    - name: Create unencrypted ansible vault data
+      copy:
+        content: |
+          ---
+          mysql_root_password: "{{ mysql_root_password }}"
+          mysql_wordpress_database: "{{ mysql_app_db_name }}"
+          mysql_wordpress_username: "{{ mysql_app_db_user }}"
+          mysql_wordpress_password: "{{ mysql_app_password }}"
+          ...
+        dest: "{{ playbook_dir}}/../inventory/group_vars/all/vault"
+      when: not deploy_vault.stat.exists
+
+    - name: Create ansible passwd file
+      copy:
+        content: |
+          ---
+          {{ vault_id_password}}
+          ...
+        dest: "{{ playbook_dir}}/../passwd"
+      register: deploy_create_passwd
+      when: not deploy_passwd.stat.exists
+
+    - name: Encrypt the Ansible vault if the passwd file has been created
+      shell:
+        cmd: >-
+          ansible-vault
+          encrypt
+          {{ playbook_dir }}/../inventory/group_vars/all/vault
+          --vault-id {{ playbook_dir }}/../passwd
+      when: deploy_create_passwd.changed
+...

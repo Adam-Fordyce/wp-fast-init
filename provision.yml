@@ -1,16 +1,19 @@
 ---
 # Provision Playbook to deploy Wordpress onto a remote Ubuntu instance
-- hosts: webserver
-  gather_facts: true
-  become: true
-  vars:
-    mysql_database_host: localhost
+
+- hosts: controller
+  gather_facts: false
+  become: false
   pre_tasks:
     - name: Verify Ansible minimum version
       assert:
-        that: "ansible_version.full is version_compare('2.9', '>=')"
+        that: "ansible_version.full is version_compare('2.13', '>=')"
         msg: >
-          "You must update Ansible to at least 2.9"
+          "You must update Ansible to at least 2.13"
+
+- hosts: dbserver
+  gather_facts: true
+  become: true
   tasks:
     - name: Test connection to remote instance
       wait_for_connection:
@@ -22,6 +25,20 @@
         - setup_server
 #        - setup_ufw_firewall
         - setup_mysql
+
+- hosts: webserver
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Test connection to remote instance
+      wait_for_connection:
+
+    - name: Configure Applications
+      include_role:
+        name: "{{ item }}"
+      loop:
+        - setup_server
+#        - setup_ufw_firewall
         - setup_php
         - setup_nginx
         - setup_wordpress

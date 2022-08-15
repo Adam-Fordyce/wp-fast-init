@@ -1,42 +1,35 @@
 ---
+# TODO List...
+# Install packages required for querying MySQL/MariaDB
+# Install Wordpress CLI
+# Install Wordpress CLI Bash Completion
+# Download and install the latest version of wordpress
+# Configure wordpress to connect to the database
+# Restart the relevant services if configuration parameters change
 
-# TODO: Use artifacts to get a known version of this
+- name: Install mariadb-client
+  ansible.builtin.apt:
+    name: mariadb-client
+    state: present
 
-- name: CLI - Get WP-CLI
+- name: Get WP-CLI
   ansible.builtin.get_url:
     url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
     dest: /usr/local/bin/wp
     mode: "0777"
 
-- name: CLI - Get WP-CLI bash completion
+- name: Get WP-CLI bash completion
   ansible.builtin.get_url:
     url: https://github.com/wp-cli/wp-cli/raw/master/utils/wp-completion.bash
     dest: /etc/bash_completion.d
 
-- name: DB - Create Wordpress database
-  community.mysql.mysql_db:
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    name: "{{ mysql_wordpress_database }}"
-    state: present
-
-- name: DB - Create user with all applicataion database privileges
-  community.mysql.mysql_user:
-    login_user: root
-    login_password: "{{ mysql_root_password }}"
-    name: "{{ mysql_wordpress_username }}"
-    password: "{{ mysql_wordpress_password }}"
-    encrypted: false
-    priv: '{{ mysql_wordpress_database }}.*:ALL'
-    state: present
-
-- name: APP - Create temporary build directory
+- name: Create temporary build directory
   ansible.builtin.tempfile:
     state: directory
     suffix: build
   register: setup_wordpress_tempdir
 
-- name: APP - Get latest Wordpress version
+- name: Get latest Wordpress version
   ansible.builtin.get_url:
     url: https://wordpress.org/latest.tar.gz
     dest: "{{ setup_wordpress_tempdir.path }}/"
@@ -53,7 +46,7 @@
     group: "{{ site_application_groupname }}"
     mode: "0755"
 
-- name: APP - Copy the wordpress application to the public_html folder
+- name: Copy the wordpress application to the public_html folder
   ansible.builtin.copy:
     src: "{{ setup_wordpress_tempdir.path }}/wordpress/"
     dest: "{{ wordpress_application_path }}/"
@@ -63,7 +56,7 @@
     group: "{{ site_application_groupname }}"
     mode: "0755"
 
-- name: APP - Configure wp-config.php
+- name: Configure wp-config.php
   ansible.builtin.template:
     src: templates/wp-config.php.j2
     dest: "{{ wordpress_application_path }}/wp-config.php"
@@ -74,10 +67,19 @@
     mysql_db: "{{ mysql_wordpress_database }}"
     mysql_user: "{{ mysql_wordpress_username }}"
     mysql_password: "{{ mysql_wordpress_password }}"
-    mysql_host: "{{ mysql_database_host }}"
+    mysql_host: "{{ hostvars[ groups['dbserver'] | first ].private_ip }}"
   notify: reload php
 
-- name: APP - Remove tempdir
+- name: Set the correct ownership of the wordpress application folder
+  ansible.builtin.file:
+    path: "/var/www/html/wordpress"
+    state: directory
+    mode: "0744"
+    owner: "{{ site_application_username }}"
+    group: "{{ site_application_groupname }}"
+  notify: restart php
+
+- name: Remove tempdir
   ansible.builtin.file:
     path: "{{ setup_wordpress_tempdir.path }}"
     state: absent

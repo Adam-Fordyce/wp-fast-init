@@ -1,4 +1,11 @@
 ---
+# TODO:
+# Add nginx repo
+# Install nginx package
+# Create the directory structure for wordpress nginx config
+# Render the Jinja2 template file into the path for the wordpress nginx config
+# Activeate the Wordpress configuration in nginx
+# Set the nginx application user
 
 - name: Add nginx repo
   ansible.builtin.apt_repository:
@@ -9,7 +16,7 @@
     name: nginx
     state: present
     force: true
-    update_cache: yes
+    update_cache: true
 
 - name: Create Wordpress application directory
   ansible.builtin.file:
@@ -24,7 +31,6 @@
     dest: /etc/nginx/sites-available/wordpress.conf
     owner: "{{ ansible_user }}"
     mode: "0644"
-    #validate: nginx -t
   notify: reload nginx
 
 - name: Create symbolic link to nginx configuration file for site
@@ -36,8 +42,8 @@
     state: link
   notify: reload nginx
 
-- name: Set Nginx user
-  lineinfile:
+- name: Set nginx user
+  ansible.builtin.lineinfile:
     dest: /etc/nginx/nginx.conf
     regexp: "^user"
     line: "user {{ site_application_username }};"

@@ -7,7 +7,6 @@ This role will:
  - Download and setup the WordPress CLI bash autocompletion
  - Create the WordPress database
  - Create the WordPress user
- - Grant permissions to the WordPress user on the WordPress database
  - Download the latest version of WordPress
  - Unpack WordPress
  - Configure wp-config.php
@@ -18,8 +17,5 @@ This role will:
   - name: Install WordPress
     include_role:
       name: setup_wordpress:
+
 ```
-
-## Author
-
-Adam Fordyce

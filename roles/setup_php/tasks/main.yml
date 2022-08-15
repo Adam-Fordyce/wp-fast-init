@@ -40,7 +40,7 @@
   ansible.builtin.lineinfile:
     dest: /etc/php/{{ site_php_version }}/fpm/pool.d/www.conf
     regexp: "^group"
-    line: "group = {{ site_applicataion_username }}"
+    line: "group = {{ site_application_username }}"
     state: present
   notify: restart php
 
@@ -61,7 +61,7 @@
   notify: restart php
 
 - name: Set PHP upload max filesize
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/php/{{ site_php_version }}/fpm/php.ini
     regexp: "^upload_max_filesize"
     line: "upload_max_filesize = 128M"
@@ -69,7 +69,7 @@
   notify: reload php
 
 - name: Set PHP post max filesize
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/php/{{ site_php_version }}/fpm/php.ini
     regexp: "^post_max_size"
     line: "post_max_size = 128M"

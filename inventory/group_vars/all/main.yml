@@ -1,6 +1,4 @@
 ---
-version: "0.0.1"
-mysql_database_host: localhost
 site_application_username: ansible
 site_application_groupname: ansible
 site_php_version: 8.1

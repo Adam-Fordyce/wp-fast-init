@@ -3,6 +3,6 @@ id_rsa
 passwd
 venv
 vault
-roles/setup_nginx/tasks/main.yml
 inventory/hosts.yaml
 id_ed25519.pub
+inventory/group_vars/all/vault

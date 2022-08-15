@@ -1,5 +1,8 @@
 ---
-# setup_server roles main task file
+# Todo:
+# Create the required group(s) and user(s) for the application
+# Enable the Ubuntu univers repository for "Ubuntu jammy"
+# Optionally allow for updating and upgrading the operating system
 
 - name: Create application users group
   ansible.builtin.group:
@@ -15,12 +18,15 @@
     state: present
 
 - name: Enable the Ubuntu universe repository
-  apt_repository:
-    repo: "{{ item }}"
+  ansible.builtin.apt_repository:
+    repo: "{{ repo }}"
   loop:
     - "deb http://archive.ubuntu.com/ubuntu/ jammy universe"
     - "deb http://archive.ubuntu.com/ubuntu/ jammy-updates universe"
     - "deb http://security.ubuntu.com/ubuntu/ jammy-security universe"
+  loop_control:
+    loop_var: repo
+    label: "Enable: {{ repo }}"
 
 - name: Update the Ubuntu Operating System
   block:
