@@ -7,3 +7,4 @@ inventory/hosts.yaml
 id_ed25519.pub
 inventory/group_vars/all/vault
 inventory/group_vars/all/vault
+initialise-aws.sh
